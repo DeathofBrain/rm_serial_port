@@ -77,7 +77,18 @@ public:
     }
     Frame frame;
     frame.buffer_to_frame(receive_buffer);
-    
+
+    // TODO: 将帧数据传递给其他模块
+    std::cout << "seq: " << frame.seq << std::endl;
+    std::cout << "data_length: " << frame.data_length << std::endl;
+    std::cout << "cmd_id: " << frame.cmd_id << std::endl;
+    std::cout << "CRC8: " << frame.CRC8 << std::endl;
+    std::cout << "CRC16: " << frame.CRC16 << std::endl;
+    std::cout << "data: ";
+    for (size_t i = 0; i < frame.data_length; i++) {
+      std::cout << frame.data[i] << " ";
+    }
+    std::cout << std::endl;
   }
 };
 } // namespace rm_serial_port
