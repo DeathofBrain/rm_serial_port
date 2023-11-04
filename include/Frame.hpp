@@ -42,9 +42,9 @@ struct Frame {
   /**
    * @brief 将帧转换为缓冲区数据
    * 
-   * @return std::shared_ptr<u_int8_t[]> 字节数组智能指针
+   * @return u_int8_t* 字节数组首部指针
    */
-  std::shared_ptr<u_int8_t> frame_to_buffer()
+  u_int8_t* frame_to_buffer()
   {
     u_int8_t* buffer = new u_int8_t[9 + data_length];
     buffer[0] = SOF;
@@ -60,8 +60,7 @@ struct Frame {
     }
     buffer[7 + data_length] = static_cast<uint8_t>(CRC16 >> 8);
     buffer[8 + data_length] = static_cast<uint8_t>(CRC16);
-    auto shared_buffer = std::shared_ptr<u_int8_t>(buffer);
-    return shared_buffer;
+    return buffer;
   }
 
   ~Frame() {
