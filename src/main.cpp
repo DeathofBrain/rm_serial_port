@@ -10,7 +10,10 @@
 
 #include "SerialPort.hpp"
 
+#include <thread>
+
 int main(int argc, char const *argv[]) {
-  /* code */
+  rm_serial_port::SerialPort serial_port;
+  serial_port.run_service();
   return 0;
 }

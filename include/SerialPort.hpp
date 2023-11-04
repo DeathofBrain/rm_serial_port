@@ -9,7 +9,8 @@
 
 namespace rm_serial_port {
 
-constexpr auto MAX_DATA_LENGTH = std::numeric_limits<short>::max(); // 取short最大值
+constexpr auto MAX_DATA_LENGTH =
+    std::numeric_limits<short>::max(); // 取short最大值
 /**
  * @brief 串口类
  *
@@ -63,11 +64,21 @@ public:
     port->close();
   }
 
+  /**
+   * @brief 运行串口服务
+   *
+   */
+  void run_service() {
+    async_read();
+    io.run();
+  }
+
   void async_read() {
     memset(receive_buffer, 0, MAX_DATA_LENGTH);
-    port->async_read_some(
-        boost::asio::buffer(receive_buffer, MAX_DATA_LENGTH),
-        std::bind(read_handler, std::placeholders::_1, std::placeholders::_2));
+    port->async_read_some(boost::asio::buffer(receive_buffer, MAX_DATA_LENGTH),
+                          std::bind(&SerialPort::read_handler, this,
+                                    std::placeholders::_1,
+                                    std::placeholders::_2));
   }
 
   void read_handler(const boost::system::error_code &ec, std::size_t length) {
@@ -75,18 +86,18 @@ public:
       std::cerr << "Failed to read data from port " << port_name << " - "
                 << ec.message() << std::endl;
     }
-    Frame frame;
-    frame.buffer_to_frame(receive_buffer);
+    auto frame = std::make_unique<Frame>();
+    frame->buffer_to_frame(receive_buffer);
 
     // TODO: 将帧数据传递给其他模块
-    std::cout << "seq: " << frame.seq << std::endl;
-    std::cout << "data_length: " << frame.data_length << std::endl;
-    std::cout << "cmd_id: " << frame.cmd_id << std::endl;
-    std::cout << "CRC8: " << frame.CRC8 << std::endl;
-    std::cout << "CRC16: " << frame.CRC16 << std::endl;
+    std::cout << "seq: " << frame->seq << std::endl;
+    std::cout << "data_length: " << frame->data_length << std::endl;
+    std::cout << "cmd_id: " << frame->cmd_id << std::endl;
+    std::cout << "CRC8: " << frame->CRC8 << std::endl;
+    std::cout << "CRC16: " << frame->CRC16 << std::endl;
     std::cout << "data: ";
-    for (size_t i = 0; i < frame.data_length; i++) {
-      std::cout << frame.data[i] << " ";
+    for (size_t i = 0; i < frame->data_length; i++) {
+      std::cout << std::dec << frame->data[i] << " ";
     }
     std::cout << std::endl;
   }

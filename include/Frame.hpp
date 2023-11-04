@@ -44,9 +44,9 @@ struct Frame {
    * 
    * @return std::shared_ptr<u_int8_t[]> 字节数组智能指针
    */
-  std::shared_ptr<u_int8_t[]> frame_to_buffer()
+  std::shared_ptr<u_int8_t> frame_to_buffer()
   {
-    auto buffer = std::make_shared<u_int8_t[]>(data_length + 9);
+    u_int8_t* buffer = new u_int8_t[9 + data_length];
     buffer[0] = SOF;
     buffer[1] = static_cast<uint8_t>(data_length >> 8);
     buffer[2] = static_cast<uint8_t>(data_length);
@@ -60,7 +60,8 @@ struct Frame {
     }
     buffer[7 + data_length] = static_cast<uint8_t>(CRC16 >> 8);
     buffer[8 + data_length] = static_cast<uint8_t>(CRC16);
-    return buffer;
+    auto shared_buffer = std::shared_ptr<u_int8_t>(buffer);
+    return shared_buffer;
   }
 
   ~Frame() {
