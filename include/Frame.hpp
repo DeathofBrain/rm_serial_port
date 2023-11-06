@@ -65,7 +65,6 @@ struct Frame {
     if (data != nullptr) {
       delete[] data;
     }
-    std::cout << "Frame destructed" << std::endl;
   }
 };
 } // namespace rm_serial_port

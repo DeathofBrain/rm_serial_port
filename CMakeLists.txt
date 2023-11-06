@@ -4,7 +4,7 @@ set(CMAKE_CXX_STANDARD 17)
 
 find_package(Boost REQUIRED)
 
-add_executable(rm_serial_port src/test_encode_decode.cpp)
+add_executable(rm_serial_port src/main.cpp)
 
 target_include_directories(rm_serial_port PUBLIC ${Boost_INCLUDE_DIRS})
 target_include_directories(rm_serial_port PUBLIC include)

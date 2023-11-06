@@ -9,46 +9,49 @@
 
 namespace rm_serial_port {
 
-constexpr auto MAX_DATA_LENGTH =
-    std::numeric_limits<short>::max(); // 取short最大值
+constexpr auto MAX_BUFFER_LENGTH =
+    std::numeric_limits<u_int16_t>::max(); // 最大缓冲区长度
 /**
  * @brief 串口类
  *
  */
 class SerialPort {
 private:
-  boost::system::error_code ec;                   // 用于存储错误码
-  boost::asio::io_service io;                     // io_service对象
-  std::unique_ptr<boost::asio::serial_port> port; // 串口对象
-  std::string port_name{"/dev/ttyACM0"};          // 串口名
-  uint baud_rate{115200};                         // 波特率
-  u_int8_t *receive_buffer;                       // 接收缓冲区
+  boost::system::error_code ec_;                   // 用于存储错误码
+  boost::asio::io_service io_;                     // io_service对象
+  std::unique_ptr<boost::asio::serial_port> port_; // 串口对象
+  std::string port_name_;                          // 串口名
+  uint baud_rate_{115200};                         // 波特率
+  u_int8_t *receive_buffer_;                       // 接收缓冲区
 
 public:
   /**
-   * @brief 初始化串口与接收缓冲区
+   * @brief 初始化串口
    *
+   * @param port_name 串口名
+   * @param baud_rate 波特率
    */
-  SerialPort() {
-    receive_buffer = new u_int8_t[MAX_DATA_LENGTH];
+  SerialPort(std::string port_name, u_int baud_rate)
+      : port_name_(port_name), baud_rate_(baud_rate) {
+    receive_buffer_ = new u_int8_t[MAX_BUFFER_LENGTH];
     try {
-      if (port == nullptr) {
-        port = std::make_unique<boost::asio::serial_port>(io);
+      if (port_ == nullptr) {
+        port_ = std::make_unique<boost::asio::serial_port>(io_);
       }
-      port->open(port_name, ec);
-      if (ec) {
+      port_->open(port_name, ec_);
+      if (ec_) {
         std::cerr << "Failed to open port " << port_name << " - "
-                  << ec.message() << std::endl;
+                  << ec_.message() << std::endl;
       }
-      port->set_option(
-          boost::asio::serial_port::baud_rate(baud_rate)); // 波特率，默认115200
-      port->set_option(
+      port_->set_option(boost::asio::serial_port::baud_rate(
+          baud_rate_)); // 波特率，默认115200
+      port_->set_option(
           boost::asio::serial_port::character_size(8)); // 数据位，默认8位
-      port->set_option(boost::asio::serial_port::stop_bits(
+      port_->set_option(boost::asio::serial_port::stop_bits(
           boost::asio::serial_port::stop_bits::one)); // 停止位，默认1位
-      port->set_option(boost::asio::serial_port::parity(
+      port_->set_option(boost::asio::serial_port::parity(
           boost::asio::serial_port::parity::none)); // 校验位，默认无
-      port->set_option(boost::asio::serial_port::flow_control(
+      port_->set_option(boost::asio::serial_port::flow_control(
           boost::asio::serial_port::flow_control::none)); // 流控，默认无
     } catch (const std::exception &e) {
       std::cerr << e.what() << '\n';
@@ -56,12 +59,18 @@ public:
   }
 
   /**
+   * @brief 初始化串口，使用默认串口名（C板USB串口）, 波特率115200
+   *
+   */
+  SerialPort() : SerialPort("/dev/ttyACM0", 115200) {}
+
+  /**
    * @brief 析构函数
    *
    */
   ~SerialPort() {
-    delete[] receive_buffer;
-    port->close();
+    delete[] receive_buffer_;
+    port_->close();
   }
 
   /**
@@ -69,37 +78,41 @@ public:
    *
    */
   void run_service() {
-    async_read();
-    io.run();
+    std::thread{[this] { io_.run(); }}.detach();
   }
 
-  void async_read() {
-    memset(receive_buffer, 0, MAX_DATA_LENGTH);
-    port->async_read_some(boost::asio::buffer(receive_buffer, MAX_DATA_LENGTH),
-                          std::bind(&SerialPort::read_handler, this,
-                                    std::placeholders::_1,
-                                    std::placeholders::_2));
+  /**
+   * @brief 同步方式读取数据
+   *
+   * @return std::shared_ptr<Frame> 帧指针
+   */
+  std::shared_ptr<Frame> sync_read_frame() {
+    memset(receive_buffer_, 0, MAX_BUFFER_LENGTH);
+    port_->read_some(boost::asio::buffer(receive_buffer_, MAX_BUFFER_LENGTH));
+    auto frame = std::make_shared<Frame>();
+    frame->buffer_to_frame(receive_buffer_);
+    return frame;
   }
 
-  void read_handler(const boost::system::error_code &ec, std::size_t length) {
-    if (ec) {
-      std::cerr << "Failed to read data from port " << port_name << " - "
-                << ec.message() << std::endl;
-    }
-    auto frame = std::make_unique<Frame>();
-    frame->buffer_to_frame(receive_buffer);
-
-    // TODO: 将帧数据传递给其他模块
-    std::cout << "seq: " << frame->seq << std::endl;
-    std::cout << "data_length: " << frame->data_length << std::endl;
-    std::cout << "cmd_id: " << frame->cmd_id << std::endl;
-    std::cout << "CRC8: " << frame->CRC8 << std::endl;
-    std::cout << "CRC16: " << frame->CRC16 << std::endl;
-    std::cout << "data: ";
-    for (size_t i = 0; i < frame->data_length; i++) {
-      std::cout << std::dec << frame->data[i] << " ";
-    }
-    std::cout << std::endl;
+  /**
+   * @brief 异步方式读取数据
+   *
+   * @param callback 回调函数，负责处理帧数据
+   */
+  void async_read_frame(
+      const std::function<void(std::shared_ptr<Frame>)> &callback) {
+    memset(receive_buffer_, 0, MAX_BUFFER_LENGTH);
+    port_->async_read_some(
+        boost::asio::buffer(receive_buffer_, MAX_BUFFER_LENGTH),
+        [&](const boost::system::error_code &ec, std::size_t length) {
+          if (ec) {
+            std::cerr << "Failed to read data from port " << port_name_ << " - "
+                      << ec.message() << std::endl;
+          }
+          auto frame = std::make_shared<Frame>();
+          frame->buffer_to_frame(receive_buffer_);
+          callback(frame);
+        });
   }
 };
 } // namespace rm_serial_port
