@@ -23,7 +23,7 @@ private:
   std::string port_name_;                          // 串口名
   uint baud_rate_{115200};                         // 波特率
   u_int8_t *receive_buffer_;                       // 接收缓冲区
-
+  bool async_srv_is_running{false}; // 串口异步服务是否正在运行
 public:
   /**
    * @brief 初始化串口
@@ -69,16 +69,23 @@ public:
    *
    */
   ~SerialPort() {
+    if (async_srv_is_running) {
+      io_.stop();
+    }
     delete[] receive_buffer_;
     port_->close();
   }
 
   /**
-   * @brief 运行串口服务
+   * @brief 启动串口异步服务，保持异步通信
    *
    */
-  void run_service() {
-    std::thread{[this] { io_.run(); }}.detach();
+  void run_async_service() {
+    async_srv_is_running = true;
+    std::thread{[this] {
+      auto work = boost::asio::io_service::work(io_);
+      io_.run();
+    }}.detach();
   }
 
   /**
@@ -102,6 +109,10 @@ public:
   void async_read_frame(
       const std::function<void(const std::shared_ptr<Frame> &)> &callback) {
     memset(receive_buffer_, 0, MAX_BUFFER_LENGTH);
+    // 如果串口异步服务未启动，则启动
+    if (!async_srv_is_running) {
+      run_async_service();
+    }
     port_->async_read_some(
         boost::asio::buffer(receive_buffer_, MAX_BUFFER_LENGTH),
         [&](const boost::system::error_code &ec, std::size_t length) {
@@ -113,6 +124,41 @@ public:
           frame->buffer_to_frame(receive_buffer_);
           callback(frame);
         });
+  }
+
+  /**
+   * @brief 同步方式发送数据
+   *
+   * @param frame 帧指针
+   */
+  void sync_write_frame(const std::shared_ptr<Frame> &frame) {
+    auto buffer = frame->frame_to_buffer();
+    port_->write_some(boost::asio::buffer(buffer, 9 + frame->data_length));
+    delete[] buffer;
+  }
+
+  /**
+   * @brief 异步方式发送数据
+   *
+   * @param frame 帧指针
+   */
+  void async_write_frame(const std::shared_ptr<Frame> &frame,
+                         const std::function<void()> &callback) {
+    auto buffer = frame->frame_to_buffer();
+    // 如果串口异步服务未启动，则启动
+    if (!async_srv_is_running) {
+      run_async_service();
+    }
+    port_->async_write_some(
+        boost::asio::buffer(buffer, 9 + frame->data_length),
+        [&](const boost::system::error_code &ec, std::size_t length) {
+          if (ec) {
+            std::cerr << "Failed to write data to port " << port_name_ << " - "
+                      << ec.message() << std::endl;
+          }
+          callback();
+        });
+    delete[] buffer;
   }
 };
 } // namespace rm_serial_port
