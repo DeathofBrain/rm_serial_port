@@ -1,8 +1,6 @@
 #include <iostream>
 #include <memory>
 
-// 3rd party include
-
 namespace rm_serial_port {
 /**
  * @brief 帧结构体
