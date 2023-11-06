@@ -101,13 +101,13 @@ public:
     }
     CRC16 = static_cast<uint16_t>(buffer[7 + data_length]) << 8 |
             buffer[8 + data_length];
-    // 检验CRC8和CRC16
-    if (!check_crc8()) {
-      std::cerr << "CRC8 error" << '\n';
-    }
-    if (!check_crc16()) {
-      std::cerr << "CRC16 error" << '\n';
-    }
+    // TODO:检验CRC8和CRC16
+    // if (!check_crc8()) {
+    //   std::cerr << "CRC8 error" << '\n';
+    // }
+    // if (!check_crc16()) {
+    //   std::cerr << "CRC16 error" << '\n';
+    // }
   }
 
   /**
