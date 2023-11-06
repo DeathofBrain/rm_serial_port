@@ -100,7 +100,7 @@ public:
    * @param callback 回调函数，负责处理帧数据
    */
   void async_read_frame(
-      const std::function<void(std::shared_ptr<Frame>)> &callback) {
+      const std::function<void(const std::shared_ptr<Frame> &)> &callback) {
     memset(receive_buffer_, 0, MAX_BUFFER_LENGTH);
     port_->async_read_some(
         boost::asio::buffer(receive_buffer_, MAX_BUFFER_LENGTH),

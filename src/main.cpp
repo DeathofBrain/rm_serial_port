@@ -16,7 +16,7 @@ int main(int argc, char const *argv[]) {
   rm_serial_port::SerialPort serial_port;
   serial_port.run_service();
   serial_port.async_read_frame(
-      [](std::shared_ptr<rm_serial_port::Frame> frame) {
+      [](const std::shared_ptr<rm_serial_port::Frame>& frame) {
         std::cout << "cmd_id: " << frame->cmd_id << '\n';
         std::cout << "data_length: " << frame->data_length << '\n';
         std::cout << "seq: " << frame->seq << '\n';
