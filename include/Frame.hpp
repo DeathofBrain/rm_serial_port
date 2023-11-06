@@ -102,7 +102,7 @@ public:
     CRC16 = static_cast<uint16_t>(buffer[7 + data_length]) << 8 |
             buffer[8 + data_length];
     // 检验CRC8和CRC16
-    if (!check_crc8(buffer)) {
+    if (!check_crc8()) {
       std::cerr << "CRC8 error" << '\n';
     }
     if (!check_crc16()) {
@@ -158,7 +158,7 @@ public:
    * @return true
    * @return false
    */
-  bool check_crc8(u_int8_t* frame_head) { return true; }
+  bool check_crc8() { return true; }
 
   /**
    * @brief 整包CRC16检验
