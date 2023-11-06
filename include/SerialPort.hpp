@@ -83,6 +83,7 @@ public:
   void run_async_service() {
     async_srv_is_running = true;
     std::thread{[this] {
+      // 挂起io_service，直到调用io_service::stop()
       auto work = boost::asio::io_service::work(io_);
       io_.run();
     }}.detach();
