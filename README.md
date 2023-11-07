@@ -6,4 +6,4 @@
 ## Features
 
 ## Based on
-Boost 1.71.0
+Boost 1.74.0

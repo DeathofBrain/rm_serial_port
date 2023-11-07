@@ -91,19 +91,19 @@ public:
     if (buffer[0] != SOF) {
       std::cerr << "SOF error" << '\n';
     }
-    data_length = static_cast<uint16_t>(buffer[1]) << 8 | buffer[2];
+    data_length = static_cast<uint16_t>(buffer[2]) << 8 | buffer[1];
     seq = buffer[3];
     CRC8 = buffer[4];
     // if (!check_crc8()) {
     //   std::cerr << "CRC8 error" << '\n';
     // }
-    cmd_id = static_cast<uint16_t>(buffer[5]) << 8 | buffer[6];
+    cmd_id = static_cast<uint16_t>(buffer[6]) << 8 | buffer[5];
     data = new u_int8_t[data_length];
     for (size_t i = 0; i < data_length; i++) {
       data[i] = buffer[7 + i];
     }
-    CRC16 = static_cast<uint16_t>(buffer[7 + data_length]) << 8 |
-            buffer[8 + data_length];
+    CRC16 = static_cast<uint16_t>(buffer[8 + data_length]) << 8 |
+            buffer[7 + data_length];
     // if (!check_crc16()) {
     //   std::cerr << "CRC16 error" << '\n';
     // }
