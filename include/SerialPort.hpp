@@ -10,7 +10,7 @@
 namespace rm_serial_port {
 
 constexpr auto MAX_BUFFER_LENGTH =
-    std::numeric_limits<u_int16_t>::max(); // 最大缓冲区长度
+    std::numeric_limits<u_int8_t>::max(); // 最大缓冲区长度
 /**
  * @brief 串口类
  *

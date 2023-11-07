@@ -94,6 +94,9 @@ public:
     data_length = static_cast<uint16_t>(buffer[1]) << 8 | buffer[2];
     seq = buffer[3];
     CRC8 = buffer[4];
+    // if (!check_crc8()) {
+    //   std::cerr << "CRC8 error" << '\n';
+    // }
     cmd_id = static_cast<uint16_t>(buffer[5]) << 8 | buffer[6];
     data = new u_int8_t[data_length];
     for (size_t i = 0; i < data_length; i++) {
@@ -101,10 +104,6 @@ public:
     }
     CRC16 = static_cast<uint16_t>(buffer[7 + data_length]) << 8 |
             buffer[8 + data_length];
-    // TODO:检验CRC8和CRC16
-    // if (!check_crc8()) {
-    //   std::cerr << "CRC8 error" << '\n';
-    // }
     // if (!check_crc16()) {
     //   std::cerr << "CRC16 error" << '\n';
     // }
